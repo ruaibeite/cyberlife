@@ -34,4 +34,7 @@ jobs:
       uses: actions/upload-artifact@v3
       with:
         name: mac-build
-        path: dist/mac/ 
+        path: |
+          dist/*.dmg
+          dist/*.zip
+          dist/*.blockmap 
