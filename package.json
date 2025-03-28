@@ -14,21 +14,24 @@
   "license": "ISC",
   "build": {
     "appId": "com.cyberlife.ai",
+    "productName": "CyberLife AI",
+    "copyright": "Copyright © 2024",
+    "mac": {
+      "target": ["dmg"],
+      "category": "public.app-category.productivity",
+      "darkModeSupport": true,
+      "hardenedRuntime": true,
+      "gatekeeperAssess": false,
+      "artifactName": "${productName}-${version}-${arch}.${ext}"
+    },
+    "dmg": {
+      "sign": false
+    },
     "win": {
-      "target": [
-        "nsis"
-      ],
+      "target": ["nsis"],
       "icon": "build/icon.ico",
       "signingHashAlgorithms": null,
       "signAndEditExecutable": false
-    },
-    "mac": {
-      "target": [
-        "dmg"
-      ],
-      "icon": "build/icon.icns",
-      "category": "public.app-category.productivity",
-      "darkModeSupport": true
     }
   },
   "devDependencies": {

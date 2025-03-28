@@ -32,6 +32,7 @@ jobs:
       env:
         ELECTRON_MIRROR: https://npmmirror.com/mirrors/electron/
         ELECTRON_BUILDER_BINARIES_MIRROR: https://npmmirror.com/mirrors/electron-builder-binaries/
+        GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         
     - name: List dist directory
       run: ls -la dist/
