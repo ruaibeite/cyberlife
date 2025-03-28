@@ -1,0 +1,256 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>Floating Button</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            width: 100vw;
+            height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            background: transparent;
+        }
+
+        .floating-button {
+            width: 100px;
+            height: 100px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, #6366f1, #4f46e5);
+            border: none;
+            cursor: grab;
+            font-size: 16px;
+            color: white;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+            transition: all 0.3s ease;
+            -webkit-app-region: no-drag;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .floating-button::before {
+            content: '';
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            background: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="%23ffffff"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 18c-4.41 0-8-3.59-8-8s3.59-8 8-8 8 3.59 8 8-3.59 8-8 8zm-1-13h2v6h-2zm0 8h2v2h-2z"/></svg>') no-repeat center;
+            background-size: 40px;
+            opacity: 0.2;
+            transition: all 0.3s ease;
+        }
+
+        .floating-button:hover {
+            transform: scale(1.05);
+            box-shadow: 0 6px 16px rgba(0, 0, 0, 0.2);
+        }
+
+        .floating-button:hover::before {
+            opacity: 0.3;
+            transform: scale(1.1);
+        }
+
+        .floating-button:active {
+            transform: scale(0.95);
+            cursor: grabbing;
+        }
+
+        .button-text {
+            font-family: Arial, sans-serif;
+            font-weight: bold;
+            font-size: 14px;
+            text-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
+            z-index: 1;
+        }
+
+        .circular-menu {
+            position: fixed;
+            pointer-events: none;
+            z-index: 1000;
+        }
+
+        .menu-item {
+            position: absolute;
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            cursor: pointer;
+            pointer-events: auto;
+            transform: scale(0);
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            color: #333;
+        }
+
+        .menu-item:hover {
+            transform: scale(1.1) !important;
+            background: white;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+        }
+
+        .menu-item i {
+            font-size: 16px;
+        }
+
+        .circular-menu.active .menu-item {
+            transform: scale(1);
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: scale(0.95); }
+            to { opacity: 1; transform: scale(1); }
+        }
+    </style>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+</head>
+<body>
+    <button class="floating-button">
+        <span class="button-text">CyberLife</span>
+    </button>
+    <div class="circular-menu">
+        <div class="menu-item" id="openChat" title="打开聊天">
+            <i class="fas fa-comments"></i>
+        </div>
+        <div class="menu-item" id="openSchedule" title="日程管理">
+            <i class="fas fa-calendar-alt"></i>
+        </div>
+        <div class="menu-item" id="openSettings" title="设置">
+            <i class="fas fa-cog"></i>
+        </div>
+        <div class="menu-item" id="quitApp" title="退出">
+            <i class="fas fa-power-off"></i>
+        </div>
+    </div>
+
+    <script>
+        const { ipcRenderer } = require('electron');
+        const button = document.querySelector('.floating-button');
+        const circularMenu = document.querySelector('.circular-menu');
+        const menuItems = document.querySelectorAll('.menu-item');
+        let isDragging = false;
+        let startX, startY;
+        let buttonX, buttonY;
+
+        // 拖动功能
+        button.addEventListener('mousedown', (e) => {
+            if (e.button === 0) { // 只在左键点击时触发
+                isDragging = true;
+                startX = e.clientX;
+                startY = e.clientY;
+                buttonX = button.offsetLeft;
+                buttonY = button.offsetTop;
+                ipcRenderer.send('start-dragging');
+            }
+        });
+
+        document.addEventListener('mousemove', (e) => {
+            if (!isDragging) return;
+
+            const deltaX = e.clientX - startX;
+            const deltaY = e.clientY - startY;
+
+            ipcRenderer.send('window-dragging', { deltaX, deltaY });
+        });
+
+        document.addEventListener('mouseup', () => {
+            if (isDragging) {
+                isDragging = false;
+                ipcRenderer.send('stop-dragging');
+            }
+        });
+
+        // 圆形菜单功能
+        function showCircularMenu(x, y) {
+            circularMenu.style.left = `${x - 20}px`;
+            circularMenu.style.top = `${y - 20}px`;
+            
+            // 计算每个菜单项的位置
+            const radius = 70; // 增加半径以适应更多按钮
+            const totalItems = menuItems.length;
+            const angleStep = (2 * Math.PI) / totalItems;
+            const startAngle = -Math.PI / 2; // 从正上方开始
+
+            menuItems.forEach((item, index) => {
+                const angle = startAngle + (index * angleStep);
+                const itemX = radius * Math.cos(angle);
+                const itemY = radius * Math.sin(angle);
+                
+                item.style.transform = 'scale(0)';
+                item.style.left = `${itemX}px`;
+                item.style.top = `${itemY}px`;
+                
+                setTimeout(() => {
+                    item.style.transform = 'scale(1)';
+                }, index * 50);
+            });
+
+            circularMenu.classList.add('active');
+        }
+
+        function hideCircularMenu() {
+            menuItems.forEach(item => {
+                item.style.transform = 'scale(0)';
+            });
+            circularMenu.classList.remove('active');
+        }
+
+        // 右键菜单
+        button.addEventListener('contextmenu', (e) => {
+            e.preventDefault();
+            const rect = button.getBoundingClientRect();
+            const centerX = rect.left + rect.width / 2;
+            const centerY = rect.top + rect.height / 2;
+            showCircularMenu(centerX, centerY);
+        });
+
+        // 点击其他地方关闭菜单
+        document.addEventListener('click', (e) => {
+            if (!circularMenu.contains(e.target) && !button.contains(e.target)) {
+                hideCircularMenu();
+            }
+        });
+
+        // 菜单项点击事件
+        document.getElementById('openChat').addEventListener('click', () => {
+            ipcRenderer.send('show-main-window');
+            hideCircularMenu();
+        });
+
+        document.getElementById('openSchedule').addEventListener('click', () => {
+            ipcRenderer.send('show-schedule');
+            hideCircularMenu();
+        });
+
+        document.getElementById('openSettings').addEventListener('click', () => {
+            ipcRenderer.send('show-settings');
+            hideCircularMenu();
+        });
+
+        document.getElementById('quitApp').addEventListener('click', () => {
+            console.log('点击了退出按钮');
+            try {
+                hideCircularMenu();
+                console.log('正在发送退出请求');
+                ipcRenderer.send('quit-app');
+            } catch (error) {
+                console.error('发送退出请求时发生错误:', error);
+            }
+        });
+    </script>
+</body>
+</html> 
