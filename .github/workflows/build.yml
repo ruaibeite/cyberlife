@@ -21,11 +21,10 @@ jobs:
       uses: actions/setup-node@v3
       with:
         node-version: '18'
-        cache: 'yarn'
         
     - name: Install dependencies
       run: |
-        yarn install --frozen-lockfile
+        yarn install
       
     - name: Build
       run: |
@@ -37,16 +36,8 @@ jobs:
     - name: List dist directory
       run: ls -la dist/
         
-    - name: Upload DMG
-      uses: actions/upload-artifact@v3
+    - name: Upload artifacts
+      uses: actions/upload-artifact@v2
       with:
-        name: mac-dmg
-        path: dist/*.dmg
-        if-no-files-found: error
-
-    - name: Upload Blockmap
-      uses: actions/upload-artifact@v3
-      with:
-        name: mac-blockmap
-        path: dist/*.blockmap
-        if-no-files-found: warn 
+        name: mac-build
+        path: dist/ 
