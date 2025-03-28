@@ -37,7 +37,12 @@ jobs:
       run: ls -la dist/
         
     - name: Upload artifacts
-      uses: actions/upload-artifact@v2
+      uses: softprops/action-gh-release@v1
+      if: startsWith(github.ref, 'refs/tags/')
       with:
-        name: mac-build
-        path: dist/ 
+        files: |
+          dist/*.dmg
+          dist/*.zip
+          dist/*.blockmap
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }} 
